@@ -6,30 +6,25 @@
 package routes
 
 import (
+	"confcenter/service"
 	"confcenter/utils/res"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func LoadGin() *gin.Engine {
+func LoadGin(serviceV3 *service.EtcdV3Service) *gin.Engine {
 
 	g := gin.Default()
 
-	loadRoutes(g)
+	v3 := g.Group("/v3")
+	addV3Route(v3, serviceV3)
+
+	addFrontend(g)
 
 	g.NoRoute(func(ctx *gin.Context) {
 		res.Error(ctx, http.StatusNotFound, res.UrlNotFound)
 	})
 
 	return g
-}
-
-func loadRoutes(g *gin.Engine) {
-
-	v3 := g.Group("/v3")
-
-	addV3Route(v3)
-
-	addFrontend(g)
 }

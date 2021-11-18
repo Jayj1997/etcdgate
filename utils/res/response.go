@@ -36,6 +36,10 @@ func InternalError(ctx *gin.Context) {
 	ctx.JSON(http.StatusInternalServerError, ginH(InternalServerError, nil))
 }
 
+func InternalError_(ctx *gin.Context, msg string) {
+	ctx.JSON(http.StatusInternalServerError, ginH(InternalServerError, msg))
+}
+
 // 禁止访问err
 func ForbiddenError(ctx *gin.Context, msgCode int) {
 	ctx.JSON(http.StatusForbidden, ginH(msgCode, nil))

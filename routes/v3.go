@@ -5,12 +5,20 @@
  */
 package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"confcenter/handler"
+	"confcenter/service"
 
-func addV3Route(rg *gin.RouterGroup) {
+	"github.com/gin-gonic/gin"
+)
 
-	rg.POST("/auth")
-	rg.POST("/get")
-	rg.POST("/put")
-	rg.POST("/del")
+//TODO should use session?
+// addV3Route add etcd v3 route
+func addV3Route(rg *gin.RouterGroup, v3Service *service.EtcdV3Service) {
+
+	v3Handler := handler.CreateEtcdV3Handler(v3Service)
+	rg.POST("/auth", v3Handler.Auth)
+	rg.POST("/get", v3Handler.Get)
+	rg.POST("/put", v3Handler.Put)
+	rg.POST("/del", v3Handler.Del)
 }
