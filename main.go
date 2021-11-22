@@ -10,7 +10,6 @@ import (
 	"confcenter/service"
 	"confcenter/utils"
 	"flag"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -24,7 +23,8 @@ var (
 	ca      = flag.String("ca", "", "")
 	cert    = flag.String("cert", "", "")
 	keyfile = flag.String("keyfile", "", "")
-	timeout = flag.Int("timeout", 5, "dial timeout")
+	timeout = flag.Int("timeout", 5, "dial timeout, eg. 5")
+	port    = flag.String("port", ":8080", "server listen port, eg. :8080")
 )
 
 func main() {
@@ -40,12 +40,10 @@ func main() {
 		Mu:          sync.RWMutex{},
 	}
 
-	fmt.Println(v3)
-
 	g := routes.LoadGin(v3)
 
 	server := &http.Server{
-		Addr:           ":8080",
+		Addr:           *port,
 		Handler:        g,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

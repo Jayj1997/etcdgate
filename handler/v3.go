@@ -24,7 +24,6 @@ func (v3 *EtcdV3) Auth(ctx *gin.Context) {
 }
 
 func (v3 *EtcdV3) Get(ctx *gin.Context) {
-
 	user := &service.User{
 		Address: "192.168.110.162:2379",
 	}
@@ -59,4 +58,31 @@ func (v3 *EtcdV3) Put(ctx *gin.Context) {
 
 func (v3 *EtcdV3) Del(ctx *gin.Context) {
 
+	user := &service.User{
+		Address: "192.168.110.162:2379",
+	}
+
+	key := ctx.PostForm("key")
+
+	if err := v3.s.Del(user, key); err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok_(ctx)
 }
+
+// func (v3 *EtcdV3) Path(ctx *gin.Context) {
+
+// 	user := &service.User{
+// 		Address: "192.168.110.162:2379",
+// 	}
+
+// 	resp, err := v3.s.Path(user)
+// 	if err != nil {
+// 		res.InternalError_(ctx, err.Error())
+// 		return
+// 	}
+
+// 	res.Ok(ctx, res.OK, resp)
+// }

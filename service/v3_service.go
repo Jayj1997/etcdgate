@@ -95,10 +95,14 @@ func getTtl(cli *clientv3.Client, lease int64) int64 {
 
 // Auth test connection by current User{}
 func (e *EtcdV3Service) Auth(user *User) error {
-	_, err := e.connect(user)
+	cli, err := e.connect(user)
+	defer cli.Close()
+
 	return err
 }
 
+// Get client and etcdctl use different storage to store data
+// so you can't use etcdctl to store and client to read
 func (e *EtcdV3Service) Get(user *User, key string) (interface{}, error) {
 	e.Mu.RLock()
 	defer e.Mu.RUnlock()
@@ -120,6 +124,7 @@ func (e *EtcdV3Service) Get(user *User, key string) (interface{}, error) {
 	if resp.Count == 0 {
 		return nil, errors.New("empty result")
 	}
+
 	kv := resp.Kvs[0]
 
 	result := map[string]interface{}{
@@ -133,6 +138,7 @@ func (e *EtcdV3Service) Get(user *User, key string) (interface{}, error) {
 
 	return result, nil
 }
+
 func (e *EtcdV3Service) Put(user *User, key, val string) error {
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
@@ -158,9 +164,20 @@ func (e *EtcdV3Service) Put(user *User, key, val string) error {
 
 	return nil
 }
-func (e *EtcdV3Service) Del(user *User) error {
-	return nil
+
+func (e *EtcdV3Service) Del(user *User, key string) error {
+
+	cli, err := e.connect(user)
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	_, err = cli.Delete(context.Background(), key)
+
+	return err
 }
-func (e *EtcdV3Service) Path(user *User) error {
-	return nil
-}
+
+// func (e *EtcdV3Service) Path(user *User) (interface{}, error) {
+
+// }

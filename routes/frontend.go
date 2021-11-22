@@ -19,7 +19,6 @@ func addFrontend(g *gin.Engine) {
 	g.StaticFS("/css", http.Dir("./ui/dist/css"))
 	g.StaticFS("/js", http.Dir("./ui/dist/js"))
 	g.StaticFS("/img", http.Dir("./ui/dist/img"))
-	g.StaticFS("/favicon.ico", http.Dir("./ui/dist/favicon.ico"))
 
 	g.Handle("GET", "/ui/*filepath", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
