@@ -21,9 +21,9 @@ yarn build
 
 ## todo
 
-* [-] base v3 function
-  * [-] get/put configuration
-  * [-] auth
+* [x] base v3 function
+  * [x] get/put/del/directory
+  * [ ] auth
 * [ ] frontend
 * [ ] finish v3 function
   * [ ] tls

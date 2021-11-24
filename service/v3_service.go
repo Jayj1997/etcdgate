@@ -199,6 +199,9 @@ type Directory struct {
 
 func (e *EtcdV3Service) GetDirectory(user *User) (interface{}, error) {
 
+	e.Mu.RLock()
+	defer e.Mu.RUnlock()
+
 	cli, err := e.connect(user)
 	if err != nil {
 		return nil, err
