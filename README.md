@@ -11,7 +11,7 @@ A monomer application, frontend use vue + arco design, backend use etcd go clien
 go mod tidy
 go run main.go
 
-# just frontend
+# run just frontend
 yarn serve
 
 # build to update frontend
@@ -21,11 +21,13 @@ yarn build
 
 ## todo
 
-* [ ] base v3 function
-  * [ ] get/push configuration
-  * [ ] auth
+* [-] base v3 function
+  * [-] get/put configuration
+  * [-] auth
 * [ ] frontend
 * [ ] finish v3 function
+  * [ ] tls
+  * [ ] history
   * [ ] namespace
   * [ ] rollback
   * [ ] listen

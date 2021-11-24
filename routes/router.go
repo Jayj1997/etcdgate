@@ -6,6 +6,7 @@
 package routes
 
 import (
+	"confcenter/middleware"
 	"confcenter/service"
 	"confcenter/utils/res"
 	"net/http"
@@ -18,7 +19,9 @@ func LoadGin(serviceV3 *service.EtcdV3Service) *gin.Engine {
 	g := gin.Default()
 
 	v3 := g.Group("/v3")
-	addV3Route(v3, serviceV3)
+	v3WithAuth := g.Group("/v3")
+	v3WithAuth.Use(middleware.JWT())
+	addV3Route(v3, v3WithAuth, serviceV3)
 
 	addFrontend(g)
 

@@ -18,13 +18,14 @@ import (
 )
 
 var (
-	isAuth  = flag.Bool("auth", false, "enable authentication")
-	isTLS   = flag.Bool("tls", false, "enable tls")
-	ca      = flag.String("ca", "", "")
-	cert    = flag.String("cert", "", "")
-	keyfile = flag.String("keyfile", "", "")
-	timeout = flag.Int("timeout", 5, "dial timeout, eg. 5")
-	port    = flag.String("port", ":8080", "server listen port, eg. :8080")
+	isAuth    = flag.Bool("auth", false, "enable authentication")
+	isTLS     = flag.Bool("tls", false, "enable tls")
+	ca        = flag.String("ca", "", "ca")
+	cert      = flag.String("cert", "", "cert")
+	keyfile   = flag.String("keyfile", "", "keyfile")
+	timeout   = flag.Int("timeout", 5, "dial timeout, eg. 5")
+	port      = flag.String("port", ":8080", "server listen port, eg. :8080")
+	separator = flag.String("separator", "/", "key separator")
 )
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 		IsTls:       *isTLS,
 		CaFile:      *ca,
 		Cert:        *cert,
+		Separator:   *separator,
 		DialTimeout: time.Duration(*timeout) * time.Second,
 		Mu:          sync.RWMutex{},
 	}

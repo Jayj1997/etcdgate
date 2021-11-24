@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +26,7 @@ type EtcdV3Service struct {
 	KeyFile     string
 	CaFile      string
 	DialTimeout time.Duration
+	Separator   string
 	Mu          sync.RWMutex
 }
 
@@ -82,8 +84,8 @@ func (e *EtcdV3Service) connect(user *User) (*clientv3.Client, error) {
 	return cli, nil
 }
 
-// getTtl
-func getTtl(cli *clientv3.Client, lease int64) int64 {
+// getTTL get lease time-to-live
+func getTTL(cli *clientv3.Client, lease int64) int64 {
 	if resp, err := cli.Lease.TimeToLive(context.Background(), clientv3.LeaseID(lease)); err != nil {
 		return 0
 	} else if resp.TTL < 0 {
@@ -95,8 +97,7 @@ func getTtl(cli *clientv3.Client, lease int64) int64 {
 
 // Auth test connection by current User{}
 func (e *EtcdV3Service) Auth(user *User) error {
-	cli, err := e.connect(user)
-	defer cli.Close()
+	_, err := e.connect(user)
 
 	return err
 }
@@ -133,7 +134,7 @@ func (e *EtcdV3Service) Get(user *User, key string) (interface{}, error) {
 		"is_dir":          false,
 		"create_revision": kv.CreateRevision,
 		"mod_revision":    kv.ModRevision,
-		"ttl":             getTtl(cli, kv.Lease),
+		"ttl":             getTTL(cli, kv.Lease),
 	}
 
 	return result, nil
@@ -165,7 +166,12 @@ func (e *EtcdV3Service) Put(user *User, key, val string) error {
 	return nil
 }
 
-func (e *EtcdV3Service) Del(user *User, key string) error {
+// Del delete dir/* if isDir
+func (e *EtcdV3Service) Del(user *User, key string, isDir bool) error {
+	e.Mu.Lock()
+	defer e.Mu.Unlock()
+
+	var err error
 
 	cli, err := e.connect(user)
 	if err != nil {
@@ -173,11 +179,83 @@ func (e *EtcdV3Service) Del(user *User, key string) error {
 	}
 	defer cli.Close()
 
-	_, err = cli.Delete(context.Background(), key)
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+	defer cancel()
+
+	if isDir {
+		// delete key/*
+		_, err = cli.Delete(ctx, key+e.Separator, clientv3.WithPrefix())
+	} else {
+		_, err = cli.Delete(ctx, key)
+	}
 
 	return err
 }
 
-// func (e *EtcdV3Service) Path(user *User) (interface{}, error) {
+type Directory struct {
+	IsNode   bool                 `json:"is_node"`
+	Children map[string]Directory `json:"children,omitempty"`
+}
 
-// }
+func (e *EtcdV3Service) GetDirectory(user *User) (interface{}, error) {
+
+	cli, err := e.connect(user)
+	if err != nil {
+		return nil, err
+	}
+	defer cli.Close()
+
+	// ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+	// defer cancel()
+
+	all, err := cli.Get(context.Background(), e.Separator, clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend))
+
+	dir := map[string]Directory{
+		e.Separator: {
+			Children: map[string]Directory{},
+			IsNode:   false,
+		},
+	}
+
+	for _, key := range all.Kvs {
+
+		var (
+			exist    bool      = false
+			isNode   bool      = false
+			cur      Directory = dir[e.Separator]
+			splitKey []string  = strings.Split(string(key.Key), e.Separator)
+		)
+
+		for index, val := range splitKey {
+
+			// head
+			if val == "" {
+				continue
+			}
+
+			// last one
+			// there shouldn't be just directory like
+			// /exampleA/exampleB/
+			if index == len(splitKey)-1 {
+				isNode = true
+			}
+
+			if _, exist = cur.Children[val]; !exist {
+				cur.Children[val] = Directory{
+					Children: map[string]Directory{},
+					IsNode:   isNode,
+				}
+			}
+
+			cur = cur.Children[val]
+		}
+	}
+
+	resp := map[string]interface{}{
+		"total":     all.Count,
+		"is_more":   all.More,
+		"directory": dir,
+	}
+
+	return resp, err
+}
