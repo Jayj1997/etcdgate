@@ -8,7 +8,6 @@ package middleware
 import (
 	"confcenter/utils"
 	"confcenter/utils/res"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,9 +17,8 @@ func JWT() gin.HandlerFunc {
 		var claims *utils.Claims
 		var err error
 
-		code := res.OK
-
 		token := ctx.GetHeader("Authorization")
+
 		if token == "" {
 			res.Unauthorized(ctx, res.TokenInvalid)
 
@@ -29,24 +27,12 @@ func JWT() gin.HandlerFunc {
 		}
 
 		claims, err = utils.ParseToken(token)
-		if err != nil {
+		if claims == nil {
 			res.Unauthorized(ctx, res.TokenInvalid)
 			ctx.Abort()
 			return
-		}
-
-		if time.Now().Unix() > claims.ExpiresAt {
-			code = res.TokenExpired
 		} else if err != nil {
-			code = res.TokenInvalid
-		}
-
-		if code == res.TokenExpired {
-			res.Ok__(ctx, res.TokenExpired)
-		} else if code != res.OK {
-
-			res.Unauthorized(ctx, code)
-
+			res.Unauthorized(ctx, res.TokenExpired)
 			ctx.Abort()
 			return
 		}

@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	isAuth    = flag.Bool("auth", false, "enable authentication")
 	isTLS     = flag.Bool("tls", false, "enable tls")
 	ca        = flag.String("ca", "", "ca")
 	cert      = flag.String("cert", "", "cert")
@@ -26,6 +25,10 @@ var (
 	timeout   = flag.Int("timeout", 5, "dial timeout, eg. 5")
 	port      = flag.String("port", ":8080", "server listen port, eg. :8080")
 	separator = flag.String("separator", "/", "key separator")
+	isAuth    = flag.Bool("auth", false, "is etcd auth enabled, enable etcd's auth if not")
+	root      = flag.String("root", "root", "etcd root user, default root if not provide")
+	pwd       = flag.String("pwd", "root", "etcd root pwd, default root if not provide")
+	addr      = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
 )
 
 func main() {
@@ -40,6 +43,11 @@ func main() {
 		Separator:   *separator,
 		DialTimeout: time.Duration(*timeout) * time.Second,
 		Mu:          sync.RWMutex{},
+	}
+
+	err := v3.IfRootAccount(*root, *pwd, *addr)
+	if err != nil {
+		logrus.Errorln("try create root user failed, IGNORE it if etcd already have a root account, err: ", err.Error())
 	}
 
 	g := routes.LoadGin(v3)

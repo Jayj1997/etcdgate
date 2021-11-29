@@ -19,6 +19,7 @@ const (
 	UserNotExists
 	UrlNotFound
 	UnauthorizedError
+	NotRoot
 	InvalidAccountOrPassword
 	DuplicatedName
 )
@@ -33,6 +34,7 @@ var Msg = map[int]string{
 	UserNotExists:            "user not exists",
 	UrlNotFound:              "url not found",
 	UnauthorizedError:        "unauthorized error",
+	NotRoot:                  "not root account",
 	InvalidAccountOrPassword: "invalid account or password",
 	DuplicatedName:           "duplicated name",
 }

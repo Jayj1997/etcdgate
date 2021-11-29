@@ -9,8 +9,11 @@ import (
 	"confcenter/service"
 	"confcenter/utils"
 	"confcenter/utils/res"
+	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type EtcdV3 struct {
@@ -31,6 +34,7 @@ func (v3 *EtcdV3) Auth(ctx *gin.Context) {
 	address := ctx.PostForm("address")
 
 	if address == "" {
+		logrus.Errorln("empty etcd address")
 		res.InternalError_(ctx, "etcd address is required")
 		return
 	}
@@ -42,12 +46,14 @@ func (v3 *EtcdV3) Auth(ctx *gin.Context) {
 	}
 
 	if err := v3.s.Auth(user); err != nil {
+		logrus.Errorln(err)
 		res.InternalError_(ctx, err.Error())
 		return
 	}
 
 	token, err := utils.GenerateToken(address, username, password)
 	if err != nil {
+		logrus.Errorln(err)
 		res.InternalError_(ctx, err.Error())
 		return
 	}
@@ -55,13 +61,18 @@ func (v3 *EtcdV3) Auth(ctx *gin.Context) {
 	res.Ok(ctx, res.OK, token)
 }
 
+// Get
+// pass rev to get target revision of value
 func (v3 *EtcdV3) Get(ctx *gin.Context) {
 	user := getUser(ctx)
 
 	key := ctx.PostForm("key")
 
-	resp, err := v3.s.Get(user, key)
+	rev, _ := strconv.Atoi(ctx.PostForm("rev"))
+
+	resp, err := v3.s.Get(user, key, int64(rev))
 	if err != nil {
+		logrus.Errorln(err)
 		res.InternalError_(ctx, err.Error())
 		return
 	}
@@ -76,12 +87,14 @@ func (v3 *EtcdV3) Put(ctx *gin.Context) {
 	key := ctx.PostForm("key")
 	val := ctx.PostForm("val")
 
-	if err := v3.s.Put(user, key, val); err != nil {
+	resp, err := v3.s.Put(user, key, val)
+	if err != nil {
+		logrus.Errorln(err)
 		res.InternalError_(ctx, err.Error())
 		return
 	}
 
-	res.Ok_(ctx)
+	res.Ok(ctx, res.OK, resp)
 }
 
 func (v3 *EtcdV3) Del(ctx *gin.Context) {
@@ -92,6 +105,7 @@ func (v3 *EtcdV3) Del(ctx *gin.Context) {
 	isDir := ctx.PostForm("dir")
 
 	if err := v3.s.Del(user, key, isDir == "true"); err != nil {
+		logrus.Errorln(err)
 		res.InternalError_(ctx, err.Error())
 	}
 
@@ -104,11 +118,119 @@ func (v3 *EtcdV3) Directory(ctx *gin.Context) {
 
 	path, err := v3.s.GetDirectory(user)
 	if err != nil {
+		logrus.Errorln(err)
 		res.InternalError_(ctx, err.Error())
 		return
 	}
 
 	res.Ok(ctx, res.OK, path)
+}
+
+func (v3 *EtcdV3) Users(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	userList, err := v3.s.Users()
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, userList)
+}
+
+func (v3 *EtcdV3) User(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.Param("name")
+
+	userInfo, err := v3.s.User(name)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, userInfo)
+}
+
+func (v3 *EtcdV3) UserAdd(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.PostForm("name")
+	pwd := ctx.PostForm("pwd")
+
+	if name == "" || pwd == "" {
+		res.Error(ctx, http.StatusForbidden, res.ParamsInvalid)
+		return
+	}
+
+	resp, err := v3.s.UserAdd(name, pwd)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+func (v3 *EtcdV3) UserDelete(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.Param("name")
+
+	resp, err := v3.s.UserDelete(name)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+func (v3 *EtcdV3) UserGrant(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.PostForm("name")
+	role := ctx.PostForm("role")
+
+	resp, err := v3.s.UserGrant(name, role)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+func (v3 *EtcdV3) UserRevoke(ctx *gin.Context) {
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.PostForm("name")
+	role := ctx.PostForm("role")
+
+	resp, err := v3.s.UserRevoke(name, role)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
 }
 
 func getUser(ctx *gin.Context) *service.User {
