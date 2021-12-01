@@ -39,6 +39,8 @@ f.e. ` go run main.go --auth=true --addr=exampleurl:2379 --root=exampleroot --pw
   * [x] get/put/del/directory
   * [x] auth
 * [ ] frontend
+  * [ ] ui
+  * [ ] listen opened config
 * [ ] finish v3 function
   * [ ] tls
   * [ ] history

@@ -18,17 +18,17 @@ import (
 )
 
 var (
-	isTLS     = flag.Bool("tls", false, "enable tls")
-	ca        = flag.String("ca", "", "ca")
-	cert      = flag.String("cert", "", "cert")
-	keyfile   = flag.String("keyfile", "", "keyfile")
+	isTLS     = flag.Bool("tls", false, "enable TLS")
+	ca        = flag.String("ca", "", "TLS trusted ca file position")
+	cert      = flag.String("cert", "", "TLS cert file position")
+	keyfile   = flag.String("keyfile", "", "tls keyfile position")
 	timeout   = flag.Int("timeout", 5, "dial timeout, eg. 5")
 	port      = flag.String("port", ":8080", "server listen port, eg. :8080")
 	separator = flag.String("separator", "/", "key separator")
-	isAuth    = flag.Bool("auth", false, "is etcd auth enabled, enable etcd's auth if not")
+	isAuth    = flag.Bool("auth", true, "is etcd auth enabled, enable etcd's auth if not")
 	root      = flag.String("root", "root", "etcd root user, default root if not provide")
 	pwd       = flag.String("pwd", "root", "etcd root pwd, default root if not provide")
-	addr      = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
+	addr      = flag.String("addr", "192.168.110.163:2379", "etcd address, default 127.0.0.1:2379 if not provide")
 )
 
 func main() {
@@ -40,6 +40,7 @@ func main() {
 		IsTls:       *isTLS,
 		CaFile:      *ca,
 		Cert:        *cert,
+		KeyFile:     *keyfile,
 		Separator:   *separator,
 		DialTimeout: time.Duration(*timeout) * time.Second,
 		Mu:          sync.RWMutex{},

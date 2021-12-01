@@ -233,6 +233,115 @@ func (v3 *EtcdV3) UserRevoke(ctx *gin.Context) {
 	res.Ok(ctx, res.OK, resp)
 }
 
+func (v3 *EtcdV3) Roles(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	resp, err := v3.s.Roles()
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+func (v3 *EtcdV3) Role(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.Param("name")
+
+	resp, err := v3.s.Role(name)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+// RoleAdd adds a new role to an etcd cluster.
+func (v3 *EtcdV3) RoleAdd(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.Param("name")
+
+	resp, err := v3.s.RoleAdd(name)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+// RoleDelete deletes a role.
+func (v3 *EtcdV3) RoleDelete(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	name := ctx.Param("name")
+
+	resp, err := v3.s.RoleDelete(name)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+func (v3 *EtcdV3) RoleGrant(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	roleName := ctx.PostForm("name")
+	key := ctx.PostForm("key")
+	rangeEnd := ctx.PostForm("range_end")
+	permissionTypeStr := ctx.PostForm("type")
+
+	permissionType, _ := strconv.Atoi(permissionTypeStr)
+
+	resp, err := v3.s.RoleGrant(roleName, key, rangeEnd, int32(permissionType))
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
+func (v3 *EtcdV3) RoleRevoke(ctx *gin.Context) {
+
+	if !v3.s.IsRoot(getUser(ctx)) {
+		res.Unauthorized(ctx, res.NotRoot)
+	}
+
+	roleName := ctx.PostForm("role_name")
+	key := ctx.PostForm("key")
+	rangeEnd := ctx.PostForm("range_end")
+
+	resp, err := v3.s.RoleRevoke(roleName, key, rangeEnd)
+	if err != nil {
+		res.InternalError_(ctx, err.Error())
+		return
+	}
+
+	res.Ok(ctx, res.OK, resp)
+}
+
 func getUser(ctx *gin.Context) *service.User {
 
 	a, _ := ctx.Get("address")

@@ -146,6 +146,22 @@ func getTTL(cli *clientv3.Client, lease int64) int64 {
 	}
 }
 
+// return format error
+func whichError(err error) error {
+	switch err {
+	case context.Canceled:
+		return fmt.Errorf("ctx is canceled by another routine: %v", err)
+	case context.DeadlineExceeded:
+		return fmt.Errorf("ctx is attached with a deadline is exceeded: %v", err)
+	case rpctypes.ErrEmptyKey:
+		return fmt.Errorf("client-side error: %v", err)
+	case rpctypes.ErrPermissionDenied:
+		return fmt.Errorf("server-side error: %v", err)
+	default:
+		return fmt.Errorf("error occurred, this may caused by bad cluster endpoints, error: %v", err)
+	}
+}
+
 // Auth test connection by current User{}
 func (e *EtcdV3Service) Auth(user *User) error {
 	_, err := e.connect(user)
@@ -168,7 +184,7 @@ func (e *EtcdV3Service) Get(user *User, key string, rev int64) (interface{}, err
 
 	cli, err := e.connect(user)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer cli.Close()
 
@@ -181,7 +197,7 @@ func (e *EtcdV3Service) Get(user *User, key string, rev int64) (interface{}, err
 	}
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 
 	if resp.Count == 0 {
@@ -207,7 +223,7 @@ func (e *EtcdV3Service) Put(user *User, key, val string) (*clientv3.PutResponse,
 
 	cli, err := e.connect(user)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer cli.Close()
 
@@ -218,16 +234,7 @@ func (e *EtcdV3Service) Put(user *User, key, val string) (*clientv3.PutResponse,
 	resp, err := kv.Put(ctx, key, val, clientv3.WithPrevKV())
 	cancel()
 	if err != nil {
-		switch err {
-		case context.Canceled:
-			return resp, fmt.Errorf("ctx is canceled by another routine: %v", err)
-		case context.DeadlineExceeded:
-			return resp, fmt.Errorf("ctx is attached with a deadline is exceeded: %v", err)
-		case rpctypes.ErrEmptyKey:
-			return resp, fmt.Errorf("client-side error: %v", err)
-		default:
-			return resp, fmt.Errorf("bad cluster endpoints, which are not etcd servers: %v", err)
-		}
+		return resp, whichError(err)
 	}
 
 	// old key-val
@@ -245,7 +252,7 @@ func (e *EtcdV3Service) Del(user *User, key string, isDir bool) error {
 
 	cli, err := e.connect(user)
 	if err != nil {
-		return err
+		return whichError(err)
 	}
 	defer cli.Close()
 
@@ -259,7 +266,7 @@ func (e *EtcdV3Service) Del(user *User, key string, isDir bool) error {
 		_, err = cli.Delete(ctx, key)
 	}
 
-	return err
+	return whichError(err)
 }
 
 type Directory struct {
@@ -274,7 +281,7 @@ func (e *EtcdV3Service) GetDirectory(user *User) (interface{}, error) {
 
 	cli, err := e.connect(user)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer cli.Close()
 
@@ -330,10 +337,9 @@ func (e *EtcdV3Service) GetDirectory(user *User) (interface{}, error) {
 		"directory": dir,
 	}
 
-	return resp, err
+	return resp, nil
 }
 
-// TODO add role/permission related lock
 // Users get all users, root only
 func (e *EtcdV3Service) Users() (interface{}, error) {
 
@@ -342,7 +348,7 @@ func (e *EtcdV3Service) Users() (interface{}, error) {
 
 	rootCli, err := e.connect(e.root)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer rootCli.Close()
 
@@ -351,7 +357,7 @@ func (e *EtcdV3Service) Users() (interface{}, error) {
 	userList, err := rootCli.UserList(ctx)
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 
 	return userList, nil
@@ -362,7 +368,7 @@ func (e *EtcdV3Service) User(name string) (interface{}, error) {
 
 	rootCli, err := e.connect(e.root)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer rootCli.Close()
 
@@ -371,7 +377,7 @@ func (e *EtcdV3Service) User(name string) (interface{}, error) {
 	userInfo, err := rootCli.UserGet(ctx, name)
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 
 	return userInfo, nil
@@ -382,7 +388,7 @@ func (e *EtcdV3Service) UserAdd(name, pwd string) (interface{}, error) {
 
 	rootCli, err := e.connect(e.root)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer rootCli.Close()
 
@@ -391,7 +397,7 @@ func (e *EtcdV3Service) UserAdd(name, pwd string) (interface{}, error) {
 	resp, err := rootCli.UserAdd(ctx, name, pwd)
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 
 	return resp, err
@@ -400,9 +406,12 @@ func (e *EtcdV3Service) UserAdd(name, pwd string) (interface{}, error) {
 // UserDelete delete a user
 func (e *EtcdV3Service) UserDelete(name string) (interface{}, error) {
 
+	e.Mu.Lock()
+	defer e.Mu.Unlock()
+
 	rootCli, err := e.connect(e.root)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer rootCli.Close()
 
@@ -411,7 +420,7 @@ func (e *EtcdV3Service) UserDelete(name string) (interface{}, error) {
 	resp, err := rootCli.UserDelete(ctx, name)
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 
 	return resp, nil
@@ -422,7 +431,7 @@ func (e *EtcdV3Service) UserGrant(name, role string) (interface{}, error) {
 
 	rootCli, err := e.connect(e.root)
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 	defer rootCli.Close()
 
@@ -431,7 +440,7 @@ func (e *EtcdV3Service) UserGrant(name, role string) (interface{}, error) {
 	resp, err := rootCli.UserGrantRole(ctx, name, role)
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
 	}
 
 	return resp, nil
@@ -439,6 +448,29 @@ func (e *EtcdV3Service) UserGrant(name, role string) (interface{}, error) {
 
 // UserRevoke revoke user a role
 func (e *EtcdV3Service) UserRevoke(name, role string) (interface{}, error) {
+
+	e.Mu.Lock()
+	defer e.Mu.Unlock()
+
+	rootCli, err := e.connect(e.root)
+	if err != nil {
+		return nil, whichError(err)
+	}
+	defer rootCli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+
+	resp, err := rootCli.UserRevokeRole(ctx, name, role)
+	cancel()
+	if err != nil {
+		return nil, whichError(err)
+	}
+
+	return resp, nil
+}
+
+// Roles Get all roles
+func (e *EtcdV3Service) Roles() (interface{}, error) {
 
 	rootCli, err := e.connect(e.root)
 	if err != nil {
@@ -448,10 +480,131 @@ func (e *EtcdV3Service) UserRevoke(name, role string) (interface{}, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
 
-	resp, err := rootCli.UserRevokeRole(ctx, name, role)
+	roleList, err := rootCli.RoleList(ctx)
 	cancel()
 	if err != nil {
-		return nil, err
+		return nil, whichError(err)
+	}
+
+	return roleList, nil
+}
+
+func (e *EtcdV3Service) Role(roleName string) (interface{}, error) {
+
+	rootCli, err := e.connect(e.root)
+	if err != nil {
+		return nil, whichError(err)
+	}
+	defer rootCli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+
+	role, err := rootCli.RoleGet(ctx, roleName)
+	cancel()
+	if err != nil {
+		return nil, whichError(err)
+	}
+
+	perms := []map[string]string{}
+
+	for _, p := range role.Perm {
+		perms = append(perms, map[string]string{
+			"key":       string(p.Key),
+			"range_end": string(p.RangeEnd),
+			"perm_type": p.PermType.String(),
+		})
+	}
+
+	result := map[string]interface{}{
+		"header": role.Header,
+		"perm":   perms,
+	}
+
+	return result, nil
+}
+
+func (e *EtcdV3Service) RoleAdd(roleName string) (interface{}, error) {
+
+	rootCli, err := e.connect(e.root)
+	if err != nil {
+		return nil, whichError(err)
+	}
+	defer rootCli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+
+	resp, err := rootCli.RoleAdd(ctx, roleName)
+	cancel()
+	if err != nil {
+		return nil, whichError(err)
+	}
+
+	return resp, nil
+}
+
+func (e *EtcdV3Service) RoleDelete(roleName string) (interface{}, error) {
+
+	e.Mu.Lock()
+	defer e.Mu.Unlock()
+
+	rootCli, err := e.connect(e.root)
+	if err != nil {
+		return nil, whichError(err)
+	}
+	defer rootCli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+
+	resp, err := rootCli.RoleDelete(ctx, roleName)
+	cancel()
+	if err != nil {
+		return nil, whichError(err)
+	}
+
+	return resp, nil
+}
+
+// auth.pb.go
+// const (
+// 	READ      Permission_Type = 0
+// 	WRITE     Permission_Type = 1
+// 	READWRITE Permission_Type = 2
+// )
+// RoleGrant Grants a key to a role
+// official says that [key, rangeEnd), but what I test is [key, rangeEnd]
+func (e *EtcdV3Service) RoleGrant(roleName, key, rangeEnd string, permissionType int32) (interface{}, error) {
+
+	rootCli, err := e.connect(e.root)
+	if err != nil {
+		return nil, whichError(err)
+	}
+	defer rootCli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+
+	resp, err := rootCli.RoleGrantPermission(ctx, roleName, key, rangeEnd, clientv3.PermissionType(permissionType))
+	cancel()
+	if err != nil {
+		return nil, whichError(err)
+	}
+
+	return resp, nil
+}
+
+func (e *EtcdV3Service) RoleRevoke(roleName, key, rangeEnd string) (interface{}, error) {
+
+	rootCli, err := e.connect(e.root)
+	if err != nil {
+		return nil, whichError(err)
+	}
+	defer rootCli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
+
+	resp, err := rootCli.RoleRevokePermission(ctx, roleName, key, rangeEnd)
+	cancel()
+	if err != nil {
+		return nil, whichError(err)
 	}
 
 	return resp, nil
