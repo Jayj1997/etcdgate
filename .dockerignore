@@ -1,0 +1,12 @@
+
+.vscode/*
+
+# Local History for Visual Studio Code
+.history/
+
+ui/*
+!ui/dist/
+
+LICENSE
+README.md
+.gitginore
