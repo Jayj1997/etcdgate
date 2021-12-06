@@ -6,9 +6,9 @@
 package main
 
 import (
-	"confcenter/routes"
-	"confcenter/service"
-	"confcenter/utils"
+	"etcdgate/routes"
+	"etcdgate/service"
+	"etcdgate/utils"
 	"flag"
 	"net/http"
 	"sync"

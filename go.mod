@@ -1,4 +1,4 @@
-module confcenter
+module etcdgate
 
 go 1.16
 

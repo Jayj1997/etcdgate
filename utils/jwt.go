@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	salt   string        = "confcenter"
+	salt   string        = "etcdgate"
 	expire time.Duration = time.Duration(time.Hour * 24)
 )
 
