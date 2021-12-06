@@ -28,7 +28,7 @@ var (
 	isAuth    = flag.Bool("auth", true, "is etcd auth enabled, enable etcd's auth if not")
 	root      = flag.String("root", "root", "etcd root user, default root if not provide")
 	pwd       = flag.String("pwd", "root", "etcd root pwd, default root if not provide")
-	addr      = flag.String("addr", "192.168.110.163:2379", "etcd address, default 127.0.0.1:2379 if not provide")
+	addr      = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
 )
 
 func main() {

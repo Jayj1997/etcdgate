@@ -1,8 +1,8 @@
 # ETCD configuration center
 
-**A lightweight dashboard for ETCD, determined to build a dynamic configuration service in a centralized web panel, allows you to configure across environments**
+A lightweight dashboard for ETCD, determined to build a dynamic configuration service in a centralized web panel, allows you to configure across environments
 
-A monomer application, frontend use vue + arco design, backend use etcd go client interface
+frontend use vue + arco design, backend use etcd go client interface
 
 ## Get Started
 
@@ -22,7 +22,7 @@ yarn build
 
 if you'd like to enable auth, you must pass auth argument along with address, confcenter will try to open etcd auth and create a root account, if **root** and **pwd** is not provide, it will default to root:root
 
-f.e. ` go run main.go --auth=true --addr=exampleurl:2379 `
+e.g. ` go run main.go --auth=true --addr=exampleurl:2379 `
 
 however, if you already have a root account and enabled auth through etcdctl, you need to pass those arguments:
 
@@ -31,7 +31,7 @@ however, if you already have a root account and enabled auth through etcdctl, yo
 * root
 * pwd
 
-f.e. ` go run main.go --auth=true --addr=exampleurl:2379 --root=exampleroot --pwd=examplepassword `
+e.g. ` go run main.go --auth=true --addr=exampleurl:2379 --root=exampleroot --pwd=examplepassword `
 
 ## todo
 

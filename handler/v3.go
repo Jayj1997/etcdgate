@@ -307,7 +307,7 @@ func (v3 *EtcdV3) RoleGrant(ctx *gin.Context) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
-	roleName := ctx.PostForm("name")
+	roleName := ctx.PostForm("role_name")
 	key := ctx.PostForm("key")
 	rangeEnd := ctx.PostForm("range_end")
 	permissionTypeStr := ctx.PostForm("type")

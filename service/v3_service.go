@@ -10,7 +10,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -31,13 +30,6 @@ type EtcdV3Service struct {
 	Separator   string
 	Mu          sync.RWMutex // key-val read/write lock
 	root        *User
-}
-
-// User use to make connection
-type User struct {
-	Username string // enabled when IsAuth=true
-	Password string // enabled when IsAuth=true
-	Address  string // etcd address
 }
 
 // connect
@@ -129,12 +121,6 @@ func (e *EtcdV3Service) IfRootAccount(user, pwd, addr string) error {
 	return nil
 }
 
-// TODO add a more
-// IsRoot check if is root account
-func (e *EtcdV3Service) IsRoot(user *User) bool {
-	return user.Username == e.root.Username && user.Password == e.root.Password
-}
-
 // getTTL get lease time-to-live
 func getTTL(cli *clientv3.Client, lease int64) int64 {
 	if resp, err := cli.Lease.TimeToLive(context.Background(), clientv3.LeaseID(lease)); err != nil {
@@ -144,6 +130,35 @@ func getTTL(cli *clientv3.Client, lease int64) int64 {
 	} else {
 		return resp.TTL
 	}
+}
+
+// getPerms get permissions by current user
+// use to non-root user
+func (e *EtcdV3Service) getPerms(user *User) ([]Permissions, error) {
+
+	roles, err := e.User(user.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	perms := []Permissions{}
+
+	for _, role := range roles {
+		perm, err := e.Role(role)
+		if err != nil {
+			return perm, err
+		}
+
+		perms = append(perms, perm...)
+	}
+
+	return perms, nil
+}
+
+// TODO more precise
+// IsRoot check if is root account
+func (e *EtcdV3Service) IsRoot(user *User) bool {
+	return user.Username == e.root.Username && user.Password == e.root.Password
 }
 
 // return format error
@@ -162,7 +177,7 @@ func whichError(err error) error {
 	}
 }
 
-// Auth test connection by current User{}
+// Auth test connection by given user
 func (e *EtcdV3Service) Auth(user *User) error {
 	_, err := e.connect(user)
 
@@ -243,7 +258,8 @@ func (e *EtcdV3Service) Put(user *User, key, val string) (*clientv3.PutResponse,
 	return resp, nil
 }
 
-// Del delete dir/* if isDir
+// Del delete key
+// delete key* if isDir == true
 func (e *EtcdV3Service) Del(user *User, key string, isDir bool) error {
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
@@ -260,352 +276,138 @@ func (e *EtcdV3Service) Del(user *User, key string, isDir bool) error {
 	defer cancel()
 
 	if isDir {
-		// delete key/*
-		_, err = cli.Delete(ctx, key+e.Separator, clientv3.WithPrefix())
+		// delete key*
+		_, err = cli.Delete(ctx, key, clientv3.WithPrefix())
 	} else {
 		_, err = cli.Delete(ctx, key)
 	}
 
-	return whichError(err)
+	if err != nil {
+		return whichError(err)
+	}
+
+	return nil
+
 }
 
-type Directory struct {
-	IsNode   bool                 `json:"is_node"`
-	Children map[string]Directory `json:"children,omitempty"`
+type directory struct {
+	PermType       int   `json:"perm_type"`       // permission type 0 read 1 write 2 readwrite
+	CreateRevision int64 `json:"create_revision"` // last creation version
+	ModRevision    int64 `json:"mod_revision"`    // last modification version
+	RemainingLease int64 `json:"remaining_lease"` // lease remaining seconds
+	// value          string `json:"value,omitempty"` // necessary?
 }
 
+// GetDirectory get permitted key directory
 func (e *EtcdV3Service) GetDirectory(user *User) (interface{}, error) {
 
 	e.Mu.RLock()
 	defer e.Mu.RUnlock()
 
+	// dir[key] = directory
+	dir := map[string]*directory{}
+
+	resp := map[string]interface{}{
+		"total":     0,
+		"is_more":   false,
+		"directory": dir,
+	}
+
+	if e.IsRoot(user) { // if root account
+		rootCli, err := e.connect(e.root)
+		if err != nil {
+			return nil, whichError(err)
+		}
+		defer rootCli.Close()
+
+		all, err := rootCli.Get(context.Background(),
+			e.Separator,
+			clientv3.WithPrefix(),
+			clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)) // all keys
+		if err != nil {
+			return nil, whichError(err)
+		}
+
+		for _, key := range all.Kvs {
+			dir[string(key.Key)] = &directory{
+				PermType:       2, // readwrite
+				CreateRevision: key.CreateRevision,
+				ModRevision:    key.ModRevision,
+				RemainingLease: getTTL(rootCli, key.Lease),
+			}
+
+		}
+
+		resp["total"] = all.Count
+		resp["is_more"] = all.More
+
+		return resp, nil
+	}
+
+	// if not root
+	perms, err := e.getPerms(user)
+	if err != nil {
+		return nil, err
+	}
+
 	cli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
-	defer cli.Close()
 
-	all, err := cli.Get(context.Background(), e.Separator, clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend))
-	if err != nil {
-		return nil, err
-	}
+	for _, perm := range perms {
+		// traversal keys to get all keys with rangeEnd[if have)
+		// e.g. key aa rangeEnd ab
+		//      then get aa/a aa/b aa/c ....
+		keys, err := cli.Get(context.Background(), perm.Key, clientv3.WithRange(perm.RangeEnd))
+		if err != nil {
+			return nil, whichError(err)
+		}
 
-	dir := map[string]Directory{
-		e.Separator: {
-			Children: map[string]Directory{},
-			IsNode:   false,
-		},
-	}
-
-	for _, key := range all.Kvs {
-
-		var (
-			exist    bool      = false
-			isNode   bool      = false
-			cur      Directory = dir[e.Separator]
-			splitKey []string  = strings.Split(string(key.Key), e.Separator)
-		)
-
-		for index, val := range splitKey {
-
-			// head
-			if val == "" {
+		for _, key := range keys.Kvs {
+			// why this
+			// e.g. userRoles
+			// role1 key:aa   rangeEnd: ab permType: read
+			// role2 key aa/1              permType: write
+			if oldKey, exist := dir[string(key.Key)]; exist {
+				oldKey.PermType = comparePerm(oldKey.PermType, perm.PermType)
 				continue
 			}
 
-			// last one
-			// there shouldn't be just directory like
-			// /exampleA/exampleB/
-			if index == len(splitKey)-1 {
-				isNode = true
+			dir[string(key.Key)] = &directory{
+				PermType:       perm.PermType,
+				CreateRevision: key.CreateRevision,
+				ModRevision:    key.ModRevision,
+				RemainingLease: getTTL(cli, key.Lease),
 			}
-
-			if _, exist = cur.Children[val]; !exist {
-				cur.Children[val] = Directory{
-					Children: map[string]Directory{},
-					IsNode:   isNode,
-				}
-			}
-
-			cur = cur.Children[val]
 		}
 	}
 
-	resp := map[string]interface{}{
-		"total":     all.Count,
-		"is_more":   all.More,
-		"directory": dir,
-	}
+	resp["total"] = len(dir)
 
 	return resp, nil
 }
 
-// Users get all users, root only
-func (e *EtcdV3Service) Users() (interface{}, error) {
+// comparePerm compare permission_type
+// e.g. old = 0(read) new = 1(write) return 2(readwrite)
+func comparePerm(old, new int) int {
 
-	// e.Mu.RLock()
-	// defer e.Mu.RUnlock()
+	//  20 21
 
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	userList, err := rootCli.UserList(ctx)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
+	// 00 11 22
+	if old == new {
+		return new
 	}
 
-	return userList, nil
-}
-
-// get a detailed information of a user (role detail)
-func (e *EtcdV3Service) User(name string) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	userInfo, err := rootCli.UserGet(ctx, name)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
+	// 10 01
+	if old+new == 1 {
+		return 2
 	}
 
-	return userInfo, nil
-}
-
-// UserAdd adds a user
-func (e *EtcdV3Service) UserAdd(name, pwd string) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.UserAdd(ctx, name, pwd)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
+	// 20 21
+	if old > new {
+		return old
 	}
 
-	return resp, err
-}
-
-// UserDelete delete a user
-func (e *EtcdV3Service) UserDelete(name string) (interface{}, error) {
-
-	e.Mu.Lock()
-	defer e.Mu.Unlock()
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.UserDelete(ctx, name)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
-}
-
-// UserGrant grant user a role
-func (e *EtcdV3Service) UserGrant(name, role string) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.UserGrantRole(ctx, name, role)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
-}
-
-// UserRevoke revoke user a role
-func (e *EtcdV3Service) UserRevoke(name, role string) (interface{}, error) {
-
-	e.Mu.Lock()
-	defer e.Mu.Unlock()
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.UserRevokeRole(ctx, name, role)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
-}
-
-// Roles Get all roles
-func (e *EtcdV3Service) Roles() (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, err
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	roleList, err := rootCli.RoleList(ctx)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return roleList, nil
-}
-
-func (e *EtcdV3Service) Role(roleName string) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	role, err := rootCli.RoleGet(ctx, roleName)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	perms := []map[string]string{}
-
-	for _, p := range role.Perm {
-		perms = append(perms, map[string]string{
-			"key":       string(p.Key),
-			"range_end": string(p.RangeEnd),
-			"perm_type": p.PermType.String(),
-		})
-	}
-
-	result := map[string]interface{}{
-		"header": role.Header,
-		"perm":   perms,
-	}
-
-	return result, nil
-}
-
-func (e *EtcdV3Service) RoleAdd(roleName string) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.RoleAdd(ctx, roleName)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
-}
-
-func (e *EtcdV3Service) RoleDelete(roleName string) (interface{}, error) {
-
-	e.Mu.Lock()
-	defer e.Mu.Unlock()
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.RoleDelete(ctx, roleName)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
-}
-
-// auth.pb.go
-// const (
-// 	READ      Permission_Type = 0
-// 	WRITE     Permission_Type = 1
-// 	READWRITE Permission_Type = 2
-// )
-// RoleGrant Grants a key to a role
-// official says that [key, rangeEnd), but what I test is [key, rangeEnd]
-func (e *EtcdV3Service) RoleGrant(roleName, key, rangeEnd string, permissionType int32) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.RoleGrantPermission(ctx, roleName, key, rangeEnd, clientv3.PermissionType(permissionType))
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
-}
-
-func (e *EtcdV3Service) RoleRevoke(roleName, key, rangeEnd string) (interface{}, error) {
-
-	rootCli, err := e.connect(e.root)
-	if err != nil {
-		return nil, whichError(err)
-	}
-	defer rootCli.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.DialTimeout)
-
-	resp, err := rootCli.RoleRevokePermission(ctx, roleName, key, rangeEnd)
-	cancel()
-	if err != nil {
-		return nil, whichError(err)
-	}
-
-	return resp, nil
+	return new
 }
