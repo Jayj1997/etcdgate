@@ -6,9 +6,9 @@
 package routes
 
 import (
-	"confcenter/middleware"
-	"confcenter/service"
-	"confcenter/utils/res"
+	"etcdgate/middleware"
+	"etcdgate/service"
+	"etcdgate/utils/res"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

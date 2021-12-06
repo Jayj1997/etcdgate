@@ -6,9 +6,9 @@
 package handler
 
 import (
-	"confcenter/service"
-	"confcenter/utils"
-	"confcenter/utils/res"
+	"etcdgate/service"
+	"etcdgate/utils"
+	"etcdgate/utils/res"
 	"net/http"
 	"strconv"
 

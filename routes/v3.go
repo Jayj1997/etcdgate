@@ -6,8 +6,8 @@
 package routes
 
 import (
-	"confcenter/handler"
-	"confcenter/service"
+	"etcdgate/handler"
+	"etcdgate/service"
 
 	"github.com/gin-gonic/gin"
 )

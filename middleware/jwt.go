@@ -6,8 +6,8 @@
 package middleware
 
 import (
-	"confcenter/utils"
-	"confcenter/utils/res"
+	"etcdgate/utils"
+	"etcdgate/utils/res"
 
 	"github.com/gin-gonic/gin"
 )
