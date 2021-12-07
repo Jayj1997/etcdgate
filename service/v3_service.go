@@ -28,7 +28,7 @@ type EtcdV3Service struct {
 	CaFile      string
 	DialTimeout time.Duration
 	Separator   string
-	Mu          sync.RWMutex // key-val read/write lock
+	Mu          sync.RWMutex // read/write lock
 	root        *User
 }
 
@@ -80,10 +80,10 @@ func (e *EtcdV3Service) connect(user *User) (*clientv3.Client, error) {
 }
 
 // IfRootAccount
-// it will create a Root account
+// will create a Root account
 // if auth is enabled and root account are not create
 func (e *EtcdV3Service) IfRootAccount(user, pwd, addr string) error {
-	if e.IsAuth {
+	if e.IsAuth && user != "" && pwd != "" {
 		e.root = &User{
 			Address:  addr,
 			Username: user,
@@ -136,7 +136,7 @@ func getTTL(cli *clientv3.Client, lease int64) int64 {
 // use to non-root user
 func (e *EtcdV3Service) getPerms(user *User) ([]Permissions, error) {
 
-	roles, err := e.User(user.Username)
+	roles, err := e.User(user, user.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (e *EtcdV3Service) getPerms(user *User) ([]Permissions, error) {
 	perms := []Permissions{}
 
 	for _, role := range roles {
-		perm, err := e.Role(role)
+		perm, err := e.Role(user, role)
 		if err != nil {
 			return perm, err
 		}
@@ -158,6 +158,10 @@ func (e *EtcdV3Service) getPerms(user *User) ([]Permissions, error) {
 // TODO more precise
 // IsRoot check if is root account
 func (e *EtcdV3Service) IsRoot(user *User) bool {
+	if !e.IsAuth {
+		return true
+	}
+
 	return user.Username == e.root.Username && user.Password == e.root.Password
 }
 
@@ -314,7 +318,7 @@ func (e *EtcdV3Service) GetDirectory(user *User) (interface{}, error) {
 	}
 
 	if e.IsRoot(user) { // if root account
-		rootCli, err := e.connect(e.root)
+		rootCli, err := e.connect(user)
 		if err != nil {
 			return nil, whichError(err)
 		}

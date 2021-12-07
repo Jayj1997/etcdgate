@@ -10,6 +10,7 @@ import (
 	"etcdgate/service"
 	"etcdgate/utils"
 	"flag"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -23,13 +24,17 @@ var (
 	cert      = flag.String("cert", "", "TLS cert file position")
 	keyfile   = flag.String("keyfile", "", "tls keyfile position")
 	timeout   = flag.Int("timeout", 5, "dial timeout, eg. 5")
-	port      = flag.String("port", ":8080", "server listen port, eg. :8080")
+	port      = flag.Int("port", 8080, "server listen port, eg. 8080")
 	separator = flag.String("separator", "/", "key separator")
-	isAuth    = flag.Bool("auth", true, "is etcd auth enabled, enable etcd's auth if not")
+	isAuth    = flag.Bool("auth", false, "is etcd auth enabled, enable etcd's auth if not")
 	root      = flag.String("root", "root", "etcd root user, default root if not provide")
 	pwd       = flag.String("pwd", "root", "etcd root pwd, default root if not provide")
 	addr      = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
 )
+
+func init() {
+
+}
 
 func main() {
 
@@ -54,7 +59,7 @@ func main() {
 	g := routes.LoadGin(v3)
 
 	server := &http.Server{
-		Addr:           *port,
+		Addr:           fmt.Sprintf(":%d", *port),
 		Handler:        g,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

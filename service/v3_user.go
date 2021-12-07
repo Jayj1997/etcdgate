@@ -3,7 +3,7 @@
  * @Date         : 2021-12-06 13:56:02
  * @Description  : etcd user related
  * @LastEditors  : jayj
- * @LastEditTime : 2021-12-06 15:05:11
+ * @LastEditTime : 2021-12-07 14:16:30
  */
 package service
 
@@ -17,12 +17,12 @@ type User struct {
 }
 
 // Users get all users, root only
-func (e *EtcdV3Service) Users() (interface{}, error) {
+func (e *EtcdV3Service) Users(user *User) (interface{}, error) {
 
 	// e.Mu.RLock()
 	// defer e.Mu.RUnlock()
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -40,9 +40,9 @@ func (e *EtcdV3Service) Users() (interface{}, error) {
 }
 
 // get a detailed information of a user (role detail)
-func (e *EtcdV3Service) User(name string) ([]string, error) {
+func (e *EtcdV3Service) User(user *User, name string) ([]string, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -60,9 +60,9 @@ func (e *EtcdV3Service) User(name string) ([]string, error) {
 }
 
 // UserAdd adds a user
-func (e *EtcdV3Service) UserAdd(name, pwd string) (interface{}, error) {
+func (e *EtcdV3Service) UserAdd(user *User, name, pwd string) (interface{}, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -80,12 +80,12 @@ func (e *EtcdV3Service) UserAdd(name, pwd string) (interface{}, error) {
 }
 
 // UserDelete delete a user
-func (e *EtcdV3Service) UserDelete(name string) (interface{}, error) {
+func (e *EtcdV3Service) UserDelete(user *User, name string) (interface{}, error) {
 
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -103,9 +103,9 @@ func (e *EtcdV3Service) UserDelete(name string) (interface{}, error) {
 }
 
 // UserGrant grant user a role
-func (e *EtcdV3Service) UserGrant(name, role string) (interface{}, error) {
+func (e *EtcdV3Service) UserGrant(user *User, name, role string) (interface{}, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -123,12 +123,12 @@ func (e *EtcdV3Service) UserGrant(name, role string) (interface{}, error) {
 }
 
 // UserRevoke revoke user a role
-func (e *EtcdV3Service) UserRevoke(name, role string) (interface{}, error) {
+func (e *EtcdV3Service) UserRevoke(user *User, name, role string) (interface{}, error) {
 
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}

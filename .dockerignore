@@ -10,3 +10,7 @@ ui/*
 LICENSE
 README.md
 .gitginore
+
+main
+etcdgate
+routinelog*

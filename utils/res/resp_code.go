@@ -34,7 +34,7 @@ var Msg = map[int]string{
 	UserNotExists:            "user not exists",
 	UrlNotFound:              "url not found",
 	UnauthorizedError:        "unauthorized error",
-	NotRoot:                  "not root account",
+	NotRoot:                  "not root account or auth is not enabled",
 	InvalidAccountOrPassword: "invalid account or password",
 	DuplicatedName:           "duplicated name",
 }

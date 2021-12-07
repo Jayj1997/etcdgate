@@ -8,6 +8,9 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.7.4
+	github.com/jonboulle/clockwork v0.2.2 // indirect
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
+	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	go.etcd.io/etcd v3.3.27+incompatible
 	go.etcd.io/etcd/api/v3 v3.5.1

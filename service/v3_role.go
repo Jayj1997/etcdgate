@@ -3,7 +3,7 @@
  * @Date         : 2021-12-06 13:56:34
  * @Description  : etcd role related
  * @LastEditors  : jayj
- * @LastEditTime : 2021-12-06 14:53:41
+ * @LastEditTime : 2021-12-07 14:17:25
  */
 package service
 
@@ -14,9 +14,9 @@ import (
 )
 
 // Roles Get all roles
-func (e *EtcdV3Service) Roles() (interface{}, error) {
+func (e *EtcdV3Service) Roles(user *User) (interface{}, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, err
 	}
@@ -39,9 +39,9 @@ type Permissions struct {
 	PermType int    `json:"perm_type"`
 }
 
-func (e *EtcdV3Service) Role(roleName string) ([]Permissions, error) {
+func (e *EtcdV3Service) Role(user *User, roleName string) ([]Permissions, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -68,9 +68,9 @@ func (e *EtcdV3Service) Role(roleName string) ([]Permissions, error) {
 	return perms, nil
 }
 
-func (e *EtcdV3Service) RoleAdd(roleName string) (interface{}, error) {
+func (e *EtcdV3Service) RoleAdd(user *User, roleName string) (interface{}, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -87,12 +87,12 @@ func (e *EtcdV3Service) RoleAdd(roleName string) (interface{}, error) {
 	return resp, nil
 }
 
-func (e *EtcdV3Service) RoleDelete(roleName string) (interface{}, error) {
+func (e *EtcdV3Service) RoleDelete(user *User, roleName string) (interface{}, error) {
 
 	e.Mu.Lock()
 	defer e.Mu.Unlock()
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -117,9 +117,9 @@ func (e *EtcdV3Service) RoleDelete(roleName string) (interface{}, error) {
 // )
 // RoleGrant Grants a key to a role
 // official says that [key, rangeEnd), but what I test is [key, rangeEnd]
-func (e *EtcdV3Service) RoleGrant(roleName, key, rangeEnd string, permissionType int32) (interface{}, error) {
+func (e *EtcdV3Service) RoleGrant(user *User, roleName, key, rangeEnd string, permissionType int32) (interface{}, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}
@@ -136,9 +136,9 @@ func (e *EtcdV3Service) RoleGrant(roleName, key, rangeEnd string, permissionType
 	return resp, nil
 }
 
-func (e *EtcdV3Service) RoleRevoke(roleName, key, rangeEnd string) (interface{}, error) {
+func (e *EtcdV3Service) RoleRevoke(user *User, roleName, key, rangeEnd string) (interface{}, error) {
 
-	rootCli, err := e.connect(e.root)
+	rootCli, err := e.connect(user)
 	if err != nil {
 		return nil, whichError(err)
 	}

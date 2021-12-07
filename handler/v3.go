@@ -128,11 +128,13 @@ func (v3 *EtcdV3) Directory(ctx *gin.Context) {
 
 func (v3 *EtcdV3) Users(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
-	userList, err := v3.s.Users()
+	userList, err := v3.s.Users(user)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -143,13 +145,15 @@ func (v3 *EtcdV3) Users(ctx *gin.Context) {
 
 func (v3 *EtcdV3) User(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
 	name := ctx.Param("name")
 
-	userInfo, err := v3.s.User(name)
+	userInfo, err := v3.s.User(user, name)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -160,7 +164,9 @@ func (v3 *EtcdV3) User(ctx *gin.Context) {
 
 func (v3 *EtcdV3) UserAdd(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
@@ -172,7 +178,7 @@ func (v3 *EtcdV3) UserAdd(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := v3.s.UserAdd(name, pwd)
+	resp, err := v3.s.UserAdd(user, name, pwd)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -183,13 +189,15 @@ func (v3 *EtcdV3) UserAdd(ctx *gin.Context) {
 
 func (v3 *EtcdV3) UserDelete(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
 	name := ctx.Param("name")
 
-	resp, err := v3.s.UserDelete(name)
+	resp, err := v3.s.UserDelete(user, name)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -200,6 +208,8 @@ func (v3 *EtcdV3) UserDelete(ctx *gin.Context) {
 
 func (v3 *EtcdV3) UserGrant(ctx *gin.Context) {
 
+	user := getUser(ctx)
+
 	if !v3.s.IsRoot(getUser(ctx)) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
@@ -207,7 +217,7 @@ func (v3 *EtcdV3) UserGrant(ctx *gin.Context) {
 	name := ctx.PostForm("name")
 	role := ctx.PostForm("role")
 
-	resp, err := v3.s.UserGrant(name, role)
+	resp, err := v3.s.UserGrant(user, name, role)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -217,14 +227,17 @@ func (v3 *EtcdV3) UserGrant(ctx *gin.Context) {
 }
 
 func (v3 *EtcdV3) UserRevoke(ctx *gin.Context) {
-	if !v3.s.IsRoot(getUser(ctx)) {
+
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
 	name := ctx.PostForm("name")
 	role := ctx.PostForm("role")
 
-	resp, err := v3.s.UserRevoke(name, role)
+	resp, err := v3.s.UserRevoke(user, name, role)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -235,11 +248,13 @@ func (v3 *EtcdV3) UserRevoke(ctx *gin.Context) {
 
 func (v3 *EtcdV3) Roles(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
-	resp, err := v3.s.Roles()
+	resp, err := v3.s.Roles(user)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -250,13 +265,15 @@ func (v3 *EtcdV3) Roles(ctx *gin.Context) {
 
 func (v3 *EtcdV3) Role(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
 	name := ctx.Param("name")
 
-	resp, err := v3.s.Role(name)
+	resp, err := v3.s.Role(user, name)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -268,13 +285,15 @@ func (v3 *EtcdV3) Role(ctx *gin.Context) {
 // RoleAdd adds a new role to an etcd cluster.
 func (v3 *EtcdV3) RoleAdd(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
 	name := ctx.Param("name")
 
-	resp, err := v3.s.RoleAdd(name)
+	resp, err := v3.s.RoleAdd(user, name)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -286,13 +305,15 @@ func (v3 *EtcdV3) RoleAdd(ctx *gin.Context) {
 // RoleDelete deletes a role.
 func (v3 *EtcdV3) RoleDelete(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
 	name := ctx.Param("name")
 
-	resp, err := v3.s.RoleDelete(name)
+	resp, err := v3.s.RoleDelete(user, name)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -303,7 +324,9 @@ func (v3 *EtcdV3) RoleDelete(ctx *gin.Context) {
 
 func (v3 *EtcdV3) RoleGrant(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
@@ -314,7 +337,7 @@ func (v3 *EtcdV3) RoleGrant(ctx *gin.Context) {
 
 	permissionType, _ := strconv.Atoi(permissionTypeStr)
 
-	resp, err := v3.s.RoleGrant(roleName, key, rangeEnd, int32(permissionType))
+	resp, err := v3.s.RoleGrant(user, roleName, key, rangeEnd, int32(permissionType))
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
@@ -325,7 +348,9 @@ func (v3 *EtcdV3) RoleGrant(ctx *gin.Context) {
 
 func (v3 *EtcdV3) RoleRevoke(ctx *gin.Context) {
 
-	if !v3.s.IsRoot(getUser(ctx)) {
+	user := getUser(ctx)
+
+	if !v3.s.IsRoot(user) {
 		res.Unauthorized(ctx, res.NotRoot)
 	}
 
@@ -333,7 +358,7 @@ func (v3 *EtcdV3) RoleRevoke(ctx *gin.Context) {
 	key := ctx.PostForm("key")
 	rangeEnd := ctx.PostForm("range_end")
 
-	resp, err := v3.s.RoleRevoke(roleName, key, rangeEnd)
+	resp, err := v3.s.RoleRevoke(user, roleName, key, rangeEnd)
 	if err != nil {
 		res.InternalError_(ctx, err.Error())
 		return
