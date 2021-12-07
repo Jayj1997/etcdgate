@@ -1,10 +1,54 @@
-# ETCD configuration center
+# ETCD gate
 
 A lightweight dashboard for ETCD, determined to build a dynamic configuration service in a centralized web panel, allows you to configure across environments
 
 frontend use vue + arco design, backend use etcd go client interface
 
-## Get Started
+## RUN in docker
+
+if you **not familiar** with docker, git clone project, goto [docker-compose](https://github.com/Jayj1997/etcdgate/blob/base/docker-compose.yaml), and run
+
+``` bash
+  docker-compose up -d
+```
+
+if you **already have a etcd compose file**, add this in your compose file, make sure etcd-gate and etcd in a same network
+
+```docker
+etcd-gate:
+    image: ifisjayj/etcdgate:0.0.1
+    container_name: etcd-gate
+    # restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - etcd-net # make sure etcd-gate and etcd in a same network
+    environment:
+      - ADDR=http://etcd1:2379       # etcd address
+      - PORT=8080                    # etcd-gate listen port
+      - AUTH=false                   # enable auth
+      - ROOT=root                    # root username, ignore it if !auth
+      - PWD=root                     # root password, ignore it if !auth
+      - TIMEOUT=5                    # timeout per request
+      - TLS=false                    # enable tls
+      - CA=                          #
+      - CERT=                        #
+      - KEYFILE=                     #
+      - SEPARATOR=/                  # root separator
+      - GIN_MODE=release             # gin mode, set debug for debug
+```
+
+if you'd like to enable auth (through etcd-gate or not), remember set those environment:
+
+```docker
+- AUTH=true                    # enable auth
+- ROOT=root                    # root username
+- PWD=root                     # root password
+```
+
+then view <http://localhost:8080/ui>
+
+## RUN code
 
 ``` bash
 # run application
@@ -17,6 +61,8 @@ yarn serve
 # build to update frontend
 yarn build
 ```
+
+then view <http://localhost:8080/ui>
 
 ## Auth enable
 
@@ -48,9 +94,15 @@ e.g. ` go run main.go --auth=true --addr=exampleurl:2379 --root=exampleroot --pw
   * [ ] rollback
   * [ ] listen change (maybe)
   * [ ] canary publish (maybe)
-* [ ] container
+* [x] container
 * [ ] test
 * [ ] v2 support
+
+## Contribute
+
+contribute & PR
+
+we desperately need a frontend
 
 ## difficulty
 
