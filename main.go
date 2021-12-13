@@ -32,10 +32,6 @@ var (
 	addr      = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
 )
 
-func init() {
-
-}
-
 func main() {
 
 	flag.Parse()
