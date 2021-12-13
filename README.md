@@ -102,7 +102,7 @@ e.g. ` go run main.go --auth=true --addr=exampleurl:2379 --root=exampleroot --pw
 
 contribute & PR
 
-we desperately need a frontend
+we desperately need a frontend. of course, if you'd like to contribute, you can contact me at ifisjayj@gmail.com
 
 ## difficulty
 
