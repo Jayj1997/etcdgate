@@ -13,7 +13,7 @@ import (
 
 const (
 	salt   string        = "etcdgate"
-	expire time.Duration = time.Duration(time.Hour * 24)
+	expire time.Duration = time.Duration(time.Hour * 168) // 7 days
 )
 
 var jwtSecret = []byte(salt)

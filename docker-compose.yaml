@@ -81,16 +81,16 @@ services:
     environment:
       - ADDR=http://etcd1:2379       # etcd address
       - PORT=8080                    # etcd-gate listen port
-      - AUTH=false                   # enable auth
-      - ROOT=root                    # root username
-      - PWD=root                     # root password
+      - AUTH=true                    # enable auth
+      - ROOT=root                    # default root username
+      - PWD=root                     # default root password
       - TIMEOUT=5                    # timeout per request
       - TLS=false                    # enable tls
       - CA=                          #
       - CERT=                        #
       - KEYFILE=                     #
       - SEPARATOR=/                  # root separator
-      - GIN_MODE=release             # gin mode, set debug for debug
+      - GIN_MODE=release             # gin mode, set debug to debug
 networks:
   etcd-net:
     driver: bridge

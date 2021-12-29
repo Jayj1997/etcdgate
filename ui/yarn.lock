@@ -1883,6 +1883,13 @@ aws4@^1.8.0:
   resolved "https://registry.nlark.com/aws4/download/aws4-1.11.0.tgz#d61f46d83b2519250e2784daf5b09479a8b41c59"
   integrity sha1-1h9G2DslGSUOJ4Ta9bCUeai0HFk=
 
+axios@^0.24.0:
+  version "0.24.0"
+  resolved "https://registry.npmmirror.com/axios/download/axios-0.24.0.tgz?cache=0&sync_timestamp=1635213960429&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Faxios%2Fdownload%2Faxios-0.24.0.tgz#804e6fa1e4b9c5288501dd9dff56a7a0940d20d6"
+  integrity sha1-gE5voeS5xSiFAd2d/1anoJQNINY=
+  dependencies:
+    follow-redirects "^1.14.4"
+
 babel-eslint@^10.1.0:
   version "10.1.0"
   resolved "https://registry.npmmirror.com/babel-eslint/download/babel-eslint-10.1.0.tgz#6968e568a910b78fb3779cdd8b6ac2f479943232"
@@ -2540,6 +2547,11 @@ coa@^2.0.2:
     chalk "^2.4.1"
     q "^1.1.2"
 
+codemirror@^5.41.0:
+  version "5.64.0"
+  resolved "https://registry.npmmirror.com/codemirror/download/codemirror-5.64.0.tgz#182eec65b62178e3cd1de8f9d88ab819cfe5f625"
+  integrity sha512-fqr6CtDQdJ6iNMbD8NX2gH2G876nNDk+TO1rrYkgWnqQdO3O1Xa9tK6q+psqhJJgE5SpbaDcgdfLmukoUVE8pg==
+
 collection-visit@^1.0.0:
   version "1.0.0"
   resolved "https://registry.nlark.com/collection-visit/download/collection-visit-1.0.0.tgz#4bc0373c164bc3291b4d368c829cf1a80a59dca0"
@@ -3176,6 +3188,11 @@ detect-node@^2.0.4:
   version "2.1.0"
   resolved "https://registry.nlark.com/detect-node/download/detect-node-2.1.0.tgz#c9c70775a49c3d03bc2c06d9a73be550f978f8b1"
   integrity sha1-yccHdaScPQO8LAbZpzvlUPl4+LE=
+
+diff-match-patch@^1.0.0:
+  version "1.0.5"
+  resolved "https://registry.nlark.com/diff-match-patch/download/diff-match-patch-1.0.5.tgz?cache=0&sync_timestamp=1618847039630&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fdiff-match-patch%2Fdownload%2Fdiff-match-patch-1.0.5.tgz#abb584d5f10cd1196dfc55aa03701592ae3f7b37"
+  integrity sha1-q7WE1fEM0Rlt/FWqA3AVkq4/ezc=
 
 diffie-hellman@^5.0.0:
   version "5.0.3"
@@ -4081,7 +4098,7 @@ flush-write-stream@^1.0.0:
     inherits "^2.0.3"
     readable-stream "^2.3.6"
 
-follow-redirects@^1.0.0:
+follow-redirects@^1.0.0, follow-redirects@^1.14.4:
   version "1.14.6"
   resolved "https://registry.npmmirror.com/follow-redirects/download/follow-redirects-1.14.6.tgz#8cfb281bbc035b3c067d6cd975b0f6ade6e855cd"
   integrity sha512-fhUl5EwSJbbl8AR+uYL2KQDxLkdSjZGR36xy46AO7cOMTrCMON6Sa28FmAnC2tRTDbd/Uuzz3aJBv7EBN7JH8A==
@@ -8424,6 +8441,14 @@ vm-browserify@^1.0.1:
   version "1.1.2"
   resolved "https://registry.nlark.com/vm-browserify/download/vm-browserify-1.1.2.tgz#78641c488b8e6ca91a75f511e7a3b32a86e5dda0"
   integrity sha1-eGQcSIuObKkadfUR56OzKobl3aA=
+
+vue-codemirror@^4.0.6:
+  version "4.0.6"
+  resolved "https://registry.nlark.com/vue-codemirror/download/vue-codemirror-4.0.6.tgz#b786bb80d8d762a93aab8e46f79a81006f0437c4"
+  integrity sha1-t4a7gNjXYqk6q45G95qBAG8EN8Q=
+  dependencies:
+    codemirror "^5.41.0"
+    diff-match-patch "^1.0.0"
 
 vue-eslint-parser@^7.0.0:
   version "7.11.0"
