@@ -70,26 +70,6 @@ services:
     volumes:
       - etcd3_data:/bitnami/etcd
 
-  etcd-gate:
-    image: ifisjayj/etcdgate:0.0.1
-    container_name: etcd-gate
-    # restart: always
-    ports:
-      - 8070:8070
-    networks:
-      - etcd-net
-    environment:
-      - ADDR=http://etcd1:2379       # etcd address
-      - PORT=8070                    # etcd-gate listen port
-      - AUTH=true                    # enable auth
-      - ROOT=root                    # default root username
-      - PWD=root                     # default root password
-      - TIMEOUT=5                    # timeout per request
-      - TLS=false                    # enable tls
-      - CA=                          #
-      - CERT=                        #
-      - KEYFILE=                     #
-      - GIN_MODE=release             # gin mode, set debug to debug
 networks:
   etcd-net:
     driver: bridge

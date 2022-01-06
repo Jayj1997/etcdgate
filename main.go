@@ -19,17 +19,17 @@ import (
 )
 
 var (
-	isTLS     = flag.Bool("tls", false, "enable TLS")
-	ca        = flag.String("ca", "", "TLS trusted ca file position")
-	cert      = flag.String("cert", "", "TLS cert file position")
-	keyfile   = flag.String("keyfile", "", "tls keyfile position")
-	timeout   = flag.Int("timeout", 5, "dial timeout, eg. 5")
-	port      = flag.Int("port", 8080, "server listen port, eg. 8080")
-	separator = flag.String("separator", "/", "key separator")
-	isAuth    = flag.Bool("auth", false, "is etcd auth enabled, enable etcd's auth if not")
-	root      = flag.String("root", "root", "etcd root user, default root if not provide")
-	pwd       = flag.String("pwd", "root", "etcd root pwd, default root if not provide")
-	addr      = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
+	isTLS   = flag.Bool("tls", false, "enable TLS")
+	ca      = flag.String("ca", "", "TLS trusted ca file position")
+	cert    = flag.String("cert", "", "TLS cert file position")
+	keyfile = flag.String("keyfile", "", "tls keyfile position")
+	timeout = flag.Int("timeout", 5, "dial timeout, eg. 5")
+	port    = flag.Int("port", 8070, "server listen port, eg. 8080")
+	isAuth  = flag.Bool("auth", false, "is etcd auth enabled, enable etcd's auth if not")
+	root    = flag.String("root", "root", "etcd root user, default root if not provide")
+	pwd     = flag.String("pwd", "root", "etcd root pwd, default root if not provide")
+	addr    = flag.String("addr", "127.0.0.1:2379", "etcd address, default 127.0.0.1:2379 if not provide")
+	// separator = flag.String("separator", "/", "key separator")
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 		CaFile:      *ca,
 		Cert:        *cert,
 		KeyFile:     *keyfile,
-		Separator:   *separator,
+		Separator:   "/",
 		DialTimeout: time.Duration(*timeout) * time.Second,
 		Mu:          sync.RWMutex{},
 	}

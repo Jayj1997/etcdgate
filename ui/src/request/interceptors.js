@@ -3,56 +3,58 @@
  * @Date         : 2021-12-15 16:43:58
  * @Description  : request middleware
  * @LastEditors  : jayj
- * @LastEditTime : 2021-12-15 17:10:51
+ * @LastEditTime : 2022-01-06 15:17:06
  */
 
-import axios from 'axios'
+import axios from "axios";
 
-const req = axios.create()
+const req = axios.create();
 
-function getToken () {
-  return localStorage.getItem('token')
+function getToken() {
+  return localStorage.getItem("token");
 }
 
 req.interceptors.request.use(
-  config => {
-    config.headers.authorization = getToken()
-    return config
+  (config) => {
+    config.headers.authorization = getToken();
+    return config;
   },
-  err => {
-    return Promise.reject(err)
+  (err) => {
+    return Promise.reject(err);
   }
-)
+);
 
 req.interceptors.response.use(
-  resp => {
+  (resp) => {
     if (resp.data.code) {
       switch (resp.data.code) {
-        case 1006: { // token outdate
+        case 1006: {
+          // token outdate
           // warn user & reInput info
 
           // const token = getToken()
           // Refresh(token).then(resp => {
           //   localStorage.setItem('token', resp.data.data)
           // })
-          break
+          break;
         }
       }
     }
 
-    return resp
+    return resp;
   },
-  error => {
-    const code = error.response.data.code
+  (error) => {
+    const code = error.response.data.code;
     switch (code) {
-      case 1005: { // invalid token
+      case 1005: {
+        // invalid token
         // warn user & reInput info
-        localStorage.removeItem('token')
-        break
+        localStorage.removeItem("token");
+        break;
       }
     }
-    return Promise.reject(error.response.status)
+    return Promise.reject(error.response.status);
   }
-)
+);
 
-export default req
+export default req;
